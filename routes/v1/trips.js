@@ -27,7 +27,7 @@ router.post("/", async (req, res) => {
           Authorization: `Bearer ${API_MISTRAL}`,
         },
         body: JSON.stringify({
-          model: "open-mistral-7b",
+          model: "open-mixtral-8x7b",
           messages: [{ role: "user", content: prePrompt + " " + prompt }],
         }),
       }
@@ -85,6 +85,7 @@ router.patch("/:id", async (req, res) => {
     },
     data: {
       prompt: trips.prompt,
+      output: trips.output,
     },
   });
 
