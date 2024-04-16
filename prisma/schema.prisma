@@ -18,7 +18,7 @@ model Trips {
   id String @id @default(uuid())
   prompt String  @db.Text
   output String  @db.Text
-  created_at  DateTime
-  updated_at  DateTime
+  created_at  DateTime?
+  updated_at  DateTime?
   
 }
