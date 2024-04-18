@@ -17,7 +17,7 @@ datasource db {
 model Trips {
   id String @id @default(uuid())
   prompt String  @db.Text
-  output String  @db.Text
+  output Json?
   created_at  DateTime?
   updated_at  DateTime?
   
