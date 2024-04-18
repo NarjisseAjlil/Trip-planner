@@ -6,13 +6,14 @@ import V1Router from "./routes/v1.js";
 
 const app = express();
 
-const port = 3000;
+const URL_FRONT = process.env.URL_FRONT;
+const PORT = process.env.PORT;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [URL_FRONT],
     credentials: true,
   })
 );
@@ -23,6 +24,6 @@ app.use((err, req, res, next) => {
   res.status(err.status).json({ message: err.message });
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}`);
 });
