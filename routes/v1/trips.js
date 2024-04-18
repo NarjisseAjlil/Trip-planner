@@ -2,43 +2,42 @@ import express from "express";
 import { PrismaClient } from "@prisma/client";
 import TripsValidator from "../../validators/TripsValidator.js";
 import dotenv from "dotenv";
+import createError from "http-errors";
+
 dotenv.config();
 const router = express.Router();
 router.use(express.urlencoded({ extended: true }));
 const prisma = new PrismaClient();
 
-const API_MISTRAL = process.env.API_MISTRAL;
-// pre prompt
-const prePrompt =
-  "Tu es un planificateur de voyage, expert en tourisme. Pour la destination, le nombre de jours et le moyen de locomotion que je te donnerai à la fin du message, programme moi un itinéraire en plusieurs étapes Format de données souhaité: un JSON Avec, pour chaque étape: - le nom du lieu (clef JSON: name) -sa position géographique (clef JSON: location-> avec latitude/longitude en numérique) - une courte description (clef JSON: description) Donne-moi juste cette liste d'étape, sans texte autour.";
+const KEY_MISTRAL = process.env.KEY_MISTRAL;
+const MISTRAL_MODEL = process.env.MISTRAL_MODEL;
+const MISTRAL_ANSWER = process.env.MISTRAL_ANSWER;
+const PRE_PROMPT = process.env.PRE_PROMPT;
 
 // enter a prompt
 router.post("/", async (req, res) => {
   const { prompt } = req.body;
 
   try {
-    const mistralAnswer = await fetch(
-      "https://api.mistral.ai/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: `Bearer ${API_MISTRAL}`,
-        },
-        body: JSON.stringify({
-          model: "open-mixtral-8x7b",
-          messages: [{ role: "user", content: prePrompt + " " + prompt }],
-        }),
-      }
-    );
+    const mistralAnswer = await fetch(MISTRAL_ANSWER, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${KEY_MISTRAL}`,
+      },
+      body: JSON.stringify({
+        model: MISTRAL_MODEL,
+        messages: [{ role: "user", content: PRE_PROMPT + " " + prompt }],
+      }),
+    });
 
     const mistralData = await mistralAnswer.json();
 
     const trip = await prisma.trips.create({
       data: {
         prompt,
-        output: JSON.stringify(mistralData.choices[0].message.content),
+        output: JSON.parse(mistralData.choices[0].message.content),
       },
     });
 
@@ -46,6 +45,7 @@ router.post("/", async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({});
+    // mettre un message d'erreur
   }
 });
 
@@ -53,10 +53,13 @@ router.post("/", async (req, res) => {
 router.get("/", async (req, res) => {
   const trips = await prisma.trips.findMany();
   res.json(trips);
+
+  // trier par date desc
+  // limiter à 5
 });
 
 // get trip with its id
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req, res, next) => {
   const trips = await prisma.trips.findUnique({
     where: {
       id: String(req.params.id),
@@ -86,6 +89,7 @@ router.patch("/:id", async (req, res) => {
     data: {
       prompt: trips.prompt,
       output: trips.output,
+      updated_at: new Date(),
     },
   });
 
