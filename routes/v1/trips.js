@@ -51,11 +51,24 @@ router.post("/", async (req, res) => {
 
 // get trips
 router.get("/", async (req, res) => {
-  const trips = await prisma.trips.findMany();
-  res.json(trips);
+  // asc ou desc
+  const sortOrderQuery = req.query.sortOrder;
+  const sortByQuery = req.query.sortBy;
 
-  // trier par date desc
-  // limiter à 5
+  // sorting
+  let orderBy = [{ created_at: "desc" }];
+  if (sortOrderQuery) {
+    orderBy = [{ [sortByQuery]: sortOrderQuery }];
+  }
+
+  let take = 5;
+  if (req.query.take) {
+    take = parseInt(req.query.take);
+  }
+
+  const trips = await prisma.trips.findMany({ orderBy, take });
+
+  res.json(trips);
 });
 
 // get trip with its id
